@@ -1,0 +1,19 @@
+{
+    "name": "tateren/php-algorithms",
+    "description": "Algorithms and data-structures implemented on PHP",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "tateren",
+            "email": "hiwanobu@gmail.com"
+        }
+    ],
+    "require-dev": {
+        "pestphp/pest": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tateren\\PhpAlgorithms\\": "src/"
+        }
+    }
+}
