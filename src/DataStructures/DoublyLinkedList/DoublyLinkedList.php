@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Tateren\PhpAlgorithms\DataStructures\LinkedList;
+namespace Tateren\PhpAlgorithms\DataStructures\DoublyLinkedList;
 
 use Tateren\PhpAlgorithms\Utils\Comparator\Comparator;
 
-class LinkedList
+class DoublyLinkedList
 {
-    public ?LinkedListNode $head;
+    public ?DoublyLinkedListNode $head;
 
-    public ?LinkedListNode $tail;
+    public ?DoublyLinkedListNode $tail;
 
     /**
      * @var ?callable
@@ -26,7 +26,7 @@ class LinkedList
 
     public function toString(callable $callback = null): string
     {
-        return implode(',', array_map(function (LinkedListNode $node) use ($callback) {
+        return implode(',', array_map(function (DoublyLinkedListNode $node) use ($callback) {
             return $node->toString($callback);
         }, $this->toArray()));
     }
@@ -37,14 +37,16 @@ class LinkedList
      */
     public function append($value): self
     {
-        $node = new LinkedListNode($value);
+        $node = new DoublyLinkedListNode($value);
+
         if (is_null($this->head)) {
             $this->head = $node;
             $this->tail = $node;
-        } else {
-            $this->tail->next = $node;
-            $this->tail = $node;
+            return $this;
         }
+        $this->tail->next = $node;
+        $node->previous = $this->tail;
+        $this->tail = $node;
         return $this;
     }
 
@@ -54,77 +56,82 @@ class LinkedList
      */
     public function prepend($value): self
     {
-        $node = new LinkedListNode($value);
-        $node->next = $this->head;
+        $node = new DoublyLinkedListNode($value, $this->head);
+        if (!is_null($this->head)) {
+            $this->head->previous = $node;
+        }
         $this->head = $node;
+
         if (is_null($this->tail)) {
             $this->tail = $node;
         }
+
         return $this;
     }
 
     /**
      * @param mixed $value
-     * @return LinkedListNode|null
+     * @return DoublyLinkedListNode|null
      */
-    public function delete($value): ?LinkedListNode
+    public function delete($value): ?DoublyLinkedListNode
     {
         if (is_null($this->head)) {
             return null;
         }
 
         $deletedNode = null;
-
-        while ($this->head && $this->compare->equal($this->head->value, $value)) {
-            $deletedNode = $this->head;
-            $this->head = $this->head->next;
-        }
-
         $currentNode = $this->head;
 
-        if (!is_null($currentNode)) {
-            while ($currentNode->next) {
-                if ($this->compare->equal($currentNode->next->value, $value)) {
-                    $deletedNode = $currentNode->next;
-                    $currentNode->next = $currentNode->next->next;
+        while ($currentNode) {
+            if ($this->compare->equal($currentNode->value, $value)) {
+                $deletedNode = $currentNode;
+                if ($deletedNode === $this->head) {
+                    $this->head = $deletedNode->next;
+                    if (!is_null($this->head)) {
+                        $this->head->previous = null;
+                    }
+                    if ($deletedNode === $this->tail) {
+                        $this->tail = null;
+                    }
+                } elseif ($deletedNode === $this->tail) {
+                    $this->tail = $deletedNode->previous;
+                    $this->tail->next = null;
                 } else {
-                    $currentNode = $currentNode->next;
+                    $previousNode = $deletedNode->previous;
+                    $nextNode = $deletedNode->next;
+
+                    $previousNode->next = $nextNode;
+                    $nextNode->previous = $previousNode;
                 }
             }
+            $currentNode = $currentNode->next;
         }
-
-        if ($this->compare->equal($this->tail->value, $value)) {
-            $this->tail = $currentNode;
-        }
-
         return $deletedNode;
     }
 
-    public function deleteTail(): LinkedListNode
+    public function deleteTail(): ?DoublyLinkedListNode
     {
-        $deletedTail = $this->tail;
+        if (is_null($this->tail)) {
+            return null;
+        }
+
         if ($this->head === $this->tail) {
+            $deletedTail = $this->tail;
             $this->head = null;
             $this->tail = null;
+
             return $deletedTail;
         }
 
-        $currentNode = $this->head;
+        $deletedTail = $this->tail;
 
-        while ($currentNode->next) {
-            if (is_null($currentNode->next->next)) {
-                $currentNode->next = null;
-            } else {
-                $currentNode = $currentNode->next;
-            }
-        }
-
-        $this->tail = $currentNode;
+        $this->tail = $this->tail->previous;
+        $this->tail->next = null;
 
         return $deletedTail;
     }
 
-    public function deleteHead(): ?LinkedListNode
+    public function deleteHead(): ?DoublyLinkedListNode
     {
         if (is_null($this->head)) {
             return null;
@@ -134,6 +141,7 @@ class LinkedList
 
         if ($this->head->next) {
             $this->head = $this->head->next;
+            $this->head->previous = null;
         } else {
             $this->head = null;
             $this->tail = null;
@@ -142,7 +150,7 @@ class LinkedList
         return $deletedHead;
     }
 
-    public function find($findParams): ?LinkedListNode
+    public function find($findParams): ?DoublyLinkedListNode
     {
         $callback = $findParams['callback'] ?? null;
         $value = $findParams['value'] ?? null;
@@ -191,8 +199,10 @@ class LinkedList
 
         while ($currentNode !== null) {
             $nextNode = $currentNode->next;
+            $prevNode = $currentNode->previous;
 
             $currentNode->next = $prevNode;
+            $currentNode->previous = $nextNode;
 
             $prevNode = $currentNode;
             $currentNode = $nextNode;
