@@ -32,7 +32,7 @@ class BinaryTreeNode
     /**
      * @var Comparator
      */
-    private Comparator $nodeComparator;
+    public Comparator $nodeComparator;
 
     /**
      * @param null $value
